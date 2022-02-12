@@ -1,3 +1,6 @@
 venv
 jdk-17.0.1
 Scripts
+data/token.0
+
+**/__pycache__
