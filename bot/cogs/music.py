@@ -1,19 +1,19 @@
-from distutils import command
-from wsgiref.util import request_uri
+import typing as t
+
 import discord
 import wavelink
 from discord.ext import commands
 
 
 class Player(wavelink.Player):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, dj: discord.Member):
+        self.dj = dj
 
 
 class Music(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        # self.wavelink = wavelink.Client(bot=bot) #its not working with current wavelink version i guess
+        # self.wavelink = wavelink.Client(bot=bot) #its not working with current wavelink version i guess/
         self.bot.loop.create_task(self.start_nodes())
 
     @commands.Cog.listener()
@@ -37,16 +37,21 @@ class Music(commands.Cog):
 
         await wavelink.NodePool.create_node(
             bot=self.bot,
-            host='123.0.0.1',  # put there http when lavalink hosted i believe
+            host='127.0.0.1',
             port=2333,
-            https=False,  # change to true when lavalink is hosted i guess
             password='youshallnotpass')
 
-    def get_player(self, obj):
-        if isinstance(obj, command.Context):
-            return self.wavelink.get_player(obj.guild.id, cls=Player, context=obj)
-        elif isinstance(obj, discord.Guild):
-            return self.wavelink.get_player(obj.id, cls=Player)
+    @commands.command(name="connect", aliases=["join"])
+    async def connect_command(self, ctx, *, channel: t.Optional[discord.VoiceChannel]):
+        try:
+            channel = channel or ctx.author.voice.channel
+        except AttributeError:
+            return await ctx.send('No voice channel to connect to. Please either provide one or join one.')
+
+        player = Player(dj=ctx.author)
+        vc: Player = await channel.connect(cls=player)
+
+        return vc
 
 
 def setup(bot):

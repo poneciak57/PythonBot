@@ -42,7 +42,7 @@ class MusicBot(commands.Bot):
 
     # some events with prints
     async def prefix(self, bot, msg):
-        return commands.when_mentioned_or("/", (bot, msg))
+        return commands.when_mentioned_or("/")(bot, msg)
 
     async def on_ready(self):
         self.client_id = (await self.application_info()).id
