@@ -44,6 +44,12 @@ class MusicBot(commands.Bot):
     async def prefix(self, bot, msg):
         return commands.when_mentioned_or("/")(bot, msg)
 
+    async def on_error(self, err, *args, **kwargs):
+        raise
+
+    async def on_command_error(self, ctx, exc):
+        raise getattr(exc, "original", exc)
+
     async def on_ready(self):
         self.client_id = (await self.application_info()).id
         print("Bot ready.")
