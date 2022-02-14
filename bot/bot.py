@@ -40,15 +40,16 @@ class MusicBot(commands.Bot):
         if not msg.author.bot:
             await self.process_commands(msg)
 
-    # some events with prints
-    async def prefix(self, bot, msg):
-        return commands.when_mentioned_or("/")(bot, msg)
-
+    # Error handling
     async def on_error(self, err, *args, **kwargs):
         raise
 
     async def on_command_error(self, ctx, exc):
         raise getattr(exc, "original", exc)
+
+    # some events with prints
+    async def prefix(self, bot, msg):
+        return commands.when_mentioned_or("/")(bot, msg)
 
     async def on_ready(self):
         self.client_id = (await self.application_info()).id
