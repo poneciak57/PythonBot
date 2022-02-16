@@ -1,9 +1,11 @@
 import asyncio
 import datetime as dt
 import re
-from turtle import title
 import typing as t
 from decouple import config
+
+import bot.engine.exceptions as ex
+import bot.engine.queue as queue
 
 import discord
 import wavelink
@@ -19,61 +21,16 @@ OPTIONS = {
 }
 
 
-class AlreadyConnectedToChannel(commands.CommandError):
-    pass
-
-
-class NoVoiceChannel(commands.CommandError):
-    pass
-
-
-class QueueIsEmpty(commands.CommandError):
-    pass
-
-
-class NoTracksFound(commands.CommandError):
-    pass
-
-
-class Queue:
-    def __init__(self):
-        self._queue = []
-
-    def add(self, *args):
-        self._queue.extend(args)
-
-    def clear(self):
-        self._queue = []
-
-    @property
-    def is_empty(self):
-        return not self._queue
-
-    @property
-    def first_track(self):
-        if not self._queue:
-            raise QueueIsEmpty
-        return self._queue[0]
-
-    def get_next_track(self):
-        if not self._queue:
-            raise QueueIsEmpty
-        self._queue.pop(0)
-        if not self._queue:
-            return None
-        return self._queue[0]
-
-
 class Player(wavelink.Player):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.queue = Queue()
+        self.queue = queue.Queue()
 
     async def connect(self, ctx, channel=None):
         if self.is_connected:
-            raise AlreadyConnectedToChannel
+            raise ex.AlreadyConnectedToChannel
         if (channel := getattr(ctx.author.voice, "channel", channel)) is None:
-            raise NoVoiceChannel
+            raise ex.NoVoiceChannel
 
         await super().connect(channel.id)
         return channel
@@ -86,7 +43,7 @@ class Player(wavelink.Player):
 
     async def add_tracks(self, ctx, tracks):
         if not tracks:
-            raise NoTracksFound
+            raise ex.NoTracksFound
 
         if isinstance(tracks, wavelink.TrackPlaylist):
             self.queue.add(*tracks.tracks)
@@ -146,7 +103,7 @@ class Player(wavelink.Player):
         try:
             if (track := self.queue.get_next_track()) is not None:
                 await self.play(track)
-        except QueueIsEmpty:
+        except ex.QueueIsEmpty:
             pass
 
 
@@ -194,7 +151,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         for node in nodes.values():
             await self.wavelink.initiate_node(**node)
 
-    def get_player(self, obj):
+    def get_player(self, obj) -> Player:
         if isinstance(obj, commands.Context):
             return self.wavelink.get_player(obj.guild.id, cls=Player, context=obj)
         elif isinstance(obj, discord.Guild):
@@ -214,10 +171,11 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @connect_command.error
     async def connect_command_error(self, ctx, exc):
-        if isinstance(exc, AlreadyConnectedToChannel):
+        if isinstance(exc, ex.AlreadyConnectedToChannel):
             await ctx.send("Already connected to a voice channel.")
-        elif isinstance(exc, NoVoiceChannel):
+        elif isinstance(exc, ex.NoVoiceChannel):
             await ctx.send("No suitable voice channel was found.")
+        await self.disconnect_command(ctx)
 
     @commands.command(name="play")
     async def play_command(self, ctx, *, track: t.Optional[str]):
@@ -239,6 +197,37 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         player = self.get_player(ctx)
         player.clear_queue()
         await ctx.send("Queue cleared.")
+
+    @commands.command(name="queue", aliases=["ls", "list"])
+    async def queue_command(self, ctx, show: t.Optional[int] = 10):
+        player = self.get_player(ctx)
+        if player.queue.is_empty:
+            raise ex.QueueIsEmpty
+
+        embed = discord.Embed(
+            title="Queue",
+            description=f"Showing up to next {show} tracks.",
+            colour=ctx.author.colour,
+            timestamp=dt.datetime.utcnow()
+        )
+        embed.set_author(name="Query Results")
+        embed.set_footer(
+            text=f"Requested by {ctx.author.display_name}", icon_url=ctx.author.avatar_url)
+
+        if upcoming := player.queue.upcoming:
+            embed.add_field(
+                name="Next up",
+                value="\n".join(t.title for t in upcoming[:show]),
+                inline=False
+            )
+        embed.add_field(name="Currently playing",
+                        value=player.queue.current_track.title, inline=False)
+        await ctx.send(embed=embed)
+
+    @queue_command.error
+    async def queue_command_error(self, ctx, exc):
+        if isinstance(exc, ex.QueueIsEmpty):
+            await ctx.send("The queue is empty.")
 
     @commands.command(name="skip", aliases=["next"])
     async def skip_command(self, ctx):
