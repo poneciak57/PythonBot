@@ -38,13 +38,16 @@ class NoTracksFound(commands.CommandError):
 class Queue:
     def __init__(self):
         self._queue = []
-        self.position = 0
 
     def add(self, *args):
         self._queue.extend(args)
 
     def clear(self):
         self._queue = []
+
+    @property
+    def is_empty(self):
+        return not self._queue
 
     @property
     def first_track(self):
@@ -56,9 +59,9 @@ class Queue:
         if not self._queue:
             raise QueueIsEmpty
         self._queue.pop(0)
-        if self.position > len(self._queue)-1:
+        if not self._queue:
             return None
-        return self._queue[self.position]
+        return self._queue[0]
 
 
 class Player(wavelink.Player):
@@ -95,7 +98,7 @@ class Player(wavelink.Player):
                 self.queue.add(track)
                 await ctx.send(f"Added {track.title} to the queue.")
 
-        if not self.is_playing:
+        if not self.is_playing and not self.queue.is_empty:
             await self.start_playback()
 
     async def choose_track(self, ctx, tracks):
@@ -115,6 +118,7 @@ class Player(wavelink.Player):
             ),
             colour=ctx.author.colour,
             timestamp=dt.datetime.utcnow()
+
         )
         embed.set_author(name="Query Results")
         embed.set_footer(
