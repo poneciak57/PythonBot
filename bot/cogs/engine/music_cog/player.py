@@ -88,9 +88,6 @@ class Player(wavelink.Player):
             await msg.delete()
             return tracks[OPTIONS[reaction.emoji]]
 
-    def clear_queue(self):
-        self.queue.clear()
-
     async def start_playback(self):
         await self.play(self.queue.first_track)
 

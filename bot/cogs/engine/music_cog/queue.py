@@ -7,6 +7,9 @@ class Queue:
         self._queue = []
         self.position = 0
 
+    #                       #
+    #      PROPERTIES       #
+    #                       #
     @property
     def is_empty(self):
         return not self._queue
@@ -35,6 +38,9 @@ class Queue:
     def length(self) -> int:
         return len(self._queue)
 
+    #                       #
+    #       METHODS         #
+    #                       #
     def queue_statecheck(self):
         if not self._queue:
             raise ex.QueueIsEmpty
