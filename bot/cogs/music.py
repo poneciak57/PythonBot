@@ -214,22 +214,24 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         embed.set_footer(
             text=f"Requested by {ctx.author.display_name}", icon_url=ctx.author.avatar_url)
 
-        if upcoming := player.queue.upcoming:
+        if upcoming := player.queue.upcoming[:show]:
             embed.add_field(
                 name="Next up",
-                value="\n".join(t.title for t in upcoming[:show]),
+                value="\n".join(f"**[{i+1}]** {upcoming[i].title} ({upcoming[i].length//60000}:{str(upcoming[i].length%60).zfill(2)})" for i in range(
+                    len(upcoming)-1, -1, -1)),
                 inline=False
             )
         embed.add_field(name="Currently playing",
                         value=player.queue.current_track.title, inline=False)
         await ctx.send(embed=embed)
 
-    @queue_command.error
+    @ queue_command.error
     async def queue_command_error(self, ctx, exc):
+        print("queue command error")
         if isinstance(exc, ex.QueueIsEmpty):
             await ctx.send("The queue is empty.")
 
-    @commands.command(name="skip", aliases=["next"])
+    @ commands.command(name="skip", aliases=["next"])
     async def skip_command(self, ctx):
         player = self.get_player(ctx)
         await player.stop()

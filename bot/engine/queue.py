@@ -32,7 +32,7 @@ class Queue:
         return self._queue[:self.position]
 
     @property
-    def length(self):
+    def length(self) -> int:
         return len(self._queue)
 
     def queue_statecheck(self):
