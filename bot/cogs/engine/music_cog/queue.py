@@ -1,5 +1,5 @@
 import queue
-import bot.engine.exceptions as ex
+import bot.cogs.engine.music_cog.exceptions as ex
 
 
 class Queue:
