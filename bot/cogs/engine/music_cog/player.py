@@ -20,6 +20,7 @@ class Player(wavelink.Player):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.queue = queue.Queue()
+        self.loop = False
 
     async def connect(self, ctx, channel=None):
         if self.is_connected:
@@ -93,6 +94,8 @@ class Player(wavelink.Player):
 
     async def advance(self):
         try:
+            if self.loop and self.queue._queue:
+                self.queue.position -= 1
             if (track := self.queue.get_next_track()) is not None:
                 await self.play(track)
         except ex.QueueIsEmpty:

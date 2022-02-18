@@ -1,5 +1,5 @@
-import queue
 import bot.cogs.engine.music_cog.exceptions as ex
+import random
 
 
 class Queue:
@@ -58,3 +58,10 @@ class Queue:
         if self.position > len(self._queue)-1:
             return None
         return self._queue[self.position]
+
+    def shuffle(self):
+        self.queue_statecheck()
+        upcoming = self.upcoming
+        random.shuffle(upcoming)
+        self._queue = self._queue[:self.position+1]
+        self._queue.extend(upcoming)

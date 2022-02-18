@@ -145,14 +145,41 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         await player.set_pause(True)
         await ctx.send("Player paused.")
 
-    @commands.command(name="skip", aliases=["next"])
-    async def skip_command(self, ctx):
+    @commands.command(name="next", aliases=["skip"])
+    async def next_command(self, ctx):
         player = self.get_player(ctx)
+
+        if not player.queue.upcoming:
+            raise ex.NoMoreTracks
+
         await player.stop()
-        await ctx.send("Skipped current song.")
+        await ctx.send("Playing next track.")
+
+    @commands.command(name="previous", aliases=["prev"])
+    async def previous_command(self, ctx):
+        player = self.get_player(ctx)
+
+        if not player.queue.history:
+            raise ex.NoPreviousTracks
+
+        player.queue.position -= 2
+        await player.stop()
+        await ctx.send("Playing previous track.")
+
+    @commands.command(name="shuffle")
+    async def shuffle_command(self, ctx):
+        player = self.get_player(ctx)
+        player.queue.shuffle()
+        await ctx.send("Queue shuffled.")
+
+    @commands.command(name="loop")
+    async def loop_command(self, ctx):
+        player = self.get_player(ctx)
+        player.loop = not player.loop
+        await ctx.send(f"Looping current songe set to: {player.loop}.")
 
     #                       #
-    #    COMMANDS ERRORS    #
+    #    COMMAND ERRORS     #
     #                       #
     @connect_command.error
     async def connect_command_error(self, ctx, exc):
@@ -177,6 +204,25 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     async def pause_command_error(self, ctx, exc):
         if isinstance(exc, ex.PlayerIsAlreadyPaused):
             await ctx.send("Player is already paused.")
+
+    @next_command.error
+    async def next_command_error(self, ctx, exc):
+        if isinstance(exc, ex.NoMoreTracks):
+            await ctx.send("There are no more tracks in the queue.")
+        elif isinstance(exc, ex.QueueIsEmpty):
+            await ctx.send("Queue is empty")
+
+    @previous_command.error
+    async def previous_command_error(self, ctx, exc):
+        if isinstance(exc, ex.NoPreviousTracks):
+            await ctx.send("There are no previous tracks in the queue.")
+        elif isinstance(exc, ex.QueueIsEmpty):
+            await ctx.send("Queue is empty")
+
+    @shuffle_command.error
+    async def shuffle_command_error(self, ctx, exc):
+        if isinstance(exc, ex.QueueIsEmpty):
+            await ctx.send("Queue is empty")
 
 
 def setup(bot):

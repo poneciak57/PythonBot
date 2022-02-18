@@ -23,3 +23,11 @@ class PlayerIsAlreadyPaused(commands.CommandError):
 
 class PlayerIsAlreadyPlaying(commands.CommandError):
     pass
+
+
+class NoMoreTracks(commands.CommandError):
+    pass
+
+
+class NoPreviousTracks(commands.CommandError):
+    pass
