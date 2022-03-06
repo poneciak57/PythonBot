@@ -1,11 +1,5 @@
-<style>
-.center{
-    text-align:center;
-}
 
-</style>
-
-<h1 class="center"> My own discord music bot wrote in python </h1>
+# My own discord music bot wrote in python 
 <p class="center" style="font-size:20px;">
 This is my first bigger project in python and its not actually finished yet.
 I really want to make other cogs and features for this bot
