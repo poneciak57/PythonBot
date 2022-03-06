@@ -1,3 +1,4 @@
+from turtle import position
 import bot.cogs.engine.music_cog.exceptions as ex
 import random
 
@@ -15,14 +16,11 @@ class Queue:
         return not self._queue
 
     @property
-    def first_track(self):
-        self.queue_statecheck()
-        return self._queue[0]
-
-    @property
     def current_track(self):
         self.queue_statecheck()
-        return self._queue[self.position]
+        if self.position <= len(self._queue)-1:
+            return self._queue[self.position]
+        return None
 
     @property
     def upcoming(self):
@@ -49,6 +47,7 @@ class Queue:
         self._queue.extend(args)
 
     def clear(self):
+        self.position = 0
         self._queue.clear()
 
     def get_next_track(self):

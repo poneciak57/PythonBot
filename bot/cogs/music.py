@@ -1,4 +1,3 @@
-from ast import alias
 import datetime as dt
 import re
 import typing as t
@@ -106,7 +105,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         player = self.get_player(ctx)
         player.queue.clear()
         await player.stop()
-        await ctx.send("Player stopped.")
+        await ctx.send("Player stopped and queue got cleared.")
 
     @commands.command(name="queue", aliases=["ls", "list"])
     async def queue_command(self, ctx, show: t.Optional[int] = 10):
@@ -127,12 +126,12 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         if upcoming := player.queue.upcoming[:show]:
             embed.add_field(
                 name="Next up",
-                value="\n".join(f"**[{i+1}]** {upcoming[i].title} ({upcoming[i].length//60000}:{str(upcoming[i].length%60).zfill(2)})" for i in range(
-                    len(upcoming)-1, -1, -1)),
+                value="\n".join(f"**[{i+1}]** {val.title} ({val.length//60000}:{str(val.length%60).zfill(2)})" for i,
+                                val in reversed(list(enumerate(upcoming)))),
                 inline=False
             )
         embed.add_field(name="Currently playing",
-                        value=player.queue.current_track.title, inline=False)
+                        value=getattr(player.queue.current_track, "title", "Player isn't currently playing."), inline=False)
         await ctx.send(embed=embed)
 
     @commands.command(name="pause")
@@ -186,13 +185,15 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         if isinstance(exc, ex.AlreadyConnectedToChannel):
             await ctx.send("Already connected to a voice channel.")
         elif isinstance(exc, ex.NoVoiceChannel):
-            await ctx.send("No suitable voice channel was found.")
+            await ctx.send("You are not on a voice channel.")
         await self.disconnect_command(ctx)
 
     @play_command.error
     async def play_command_error(self, ctx, exc):
         if isinstance(exc, ex.QueueIsEmpty):
             await ctx.send("No songs to play.")
+        elif isinstance(exc, ex.NoVoiceChannel):
+            await ctx.send("You are not on a voice channel.")
 
     @queue_command.error
     async def queue_command_error(self, ctx, exc):
